@@ -22,7 +22,8 @@ def init(
 @app.command()
 def apply() -> None:
     """Apply your bond to the current machine's ~/.claude/."""
-    typer.echo("bond apply - not yet implemented")
+    from claude_bond.commands.apply_cmd import run_apply
+    run_apply()
 
 
 @app.command()
