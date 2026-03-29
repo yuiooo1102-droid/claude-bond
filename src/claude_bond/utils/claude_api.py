@@ -3,17 +3,20 @@ from __future__ import annotations
 import json
 import os
 
-from anthropic import Anthropic
-
-
-_client: Anthropic | None = None
 
 MODEL = "claude-sonnet-4-20250514"
 
+_client = None
 
-def _get_client() -> Anthropic:
+
+def has_api_key() -> bool:
+    return bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+
+def _get_client():
     global _client
     if _client is None:
+        from anthropic import Anthropic
         _client = Anthropic()
     return _client
 

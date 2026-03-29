@@ -22,9 +22,10 @@ def test_run_init_creates_bond_files():
         mem_dir.mkdir()
         (mem_dir / "user.md").write_text("User is a data scientist", encoding="utf-8")
 
-        with patch("claude_bond.commands.init_cmd.classify_content", return_value=mock_classified):
-            with patch("claude_bond.commands.init_cmd.generate_questions", return_value=[]):
-                run_init(claude_dir=claude_dir, bond_dir=bond_dir, interactive=False)
+        with patch("claude_bond.commands.init_cmd.has_api_key", return_value=True):
+            with patch("claude_bond.commands.init_cmd.classify_content", return_value=mock_classified):
+                with patch("claude_bond.commands.init_cmd.generate_questions", return_value=[]):
+                    run_init(claude_dir=claude_dir, bond_dir=bond_dir, interactive=False)
 
         assert (bond_dir / "identity.md").exists()
         assert (bond_dir / "rules.md").exists()
