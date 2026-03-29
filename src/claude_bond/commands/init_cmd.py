@@ -17,7 +17,7 @@ from claude_bond.extractor.interviewer import (
     identify_gaps,
     build_bond_from_classified,
 )
-from claude_bond.utils.claude_api import classify_content, generate_questions, has_api_key
+from claude_bond.utils.claude_api import classify_content, generate_questions, can_use_claude
 from claude_bond.utils.offline_classifier import classify_content_offline
 
 console = Console()
@@ -57,12 +57,12 @@ def run_init(
             "memory": [],
         }
     else:
-        online = has_api_key()
+        online = can_use_claude()
         if online:
             console.print("[bold]Asking Claude to classify extracted data...[/bold]")
             classified = classify_content(raw_text)
         else:
-            console.print("[yellow]No ANTHROPIC_API_KEY found, using offline classification...[/yellow]")
+            console.print("[yellow]No Claude backend found (CLI or API key), using offline classification...[/yellow]")
             classified = classify_content_offline(raw_text)
 
     # Display extraction summary
@@ -74,7 +74,7 @@ def run_init(
     sources: dict[str, list[str]] = {dim: ["scan"] for dim in classified}
     gaps = identify_gaps(classified)
 
-    if gaps and interactive and has_api_key():
+    if gaps and interactive and can_use_claude():
         console.print(f"\n[bold]Found gaps in {len(gaps)} dimensions. Let me ask a few questions...[/bold]\n")
         questions = generate_questions(gaps)
         for q in questions:
@@ -84,8 +84,8 @@ def run_init(
                 classified[dim] = classified.get(dim, []) + items
                 if items and dim in sources:
                     sources[dim] = list(set(sources[dim] + ["interview"]))
-    elif gaps and interactive and not has_api_key():
-        console.print(f"\n[dim]Skipping interview (no API key). You can edit bond files manually later.[/dim]")
+    elif gaps and interactive and not can_use_claude():
+        console.print(f"\n[dim]Skipping interview (no Claude backend). You can edit bond files manually later.[/dim]")
 
     # Step 3: Build and save
     dimensions = build_bond_from_classified(classified, sources)

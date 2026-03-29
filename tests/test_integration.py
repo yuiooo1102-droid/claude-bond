@@ -38,7 +38,7 @@ def test_full_flow():
         )
 
         # Step 1: Init on device A
-        with patch("claude_bond.commands.init_cmd.has_api_key", return_value=True):
+        with patch("claude_bond.commands.init_cmd.can_use_claude", return_value=True):
             with patch("claude_bond.commands.init_cmd.classify_content", return_value=mock_classified):
                 with patch("claude_bond.commands.init_cmd.generate_questions", return_value=[]):
                     run_init(claude_dir=device_a_claude, bond_dir=device_a_bond, interactive=False)
