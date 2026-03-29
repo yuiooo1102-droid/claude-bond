@@ -31,7 +31,8 @@ def export(
     output: str = typer.Option("my.bond", "--output", "-o", help="Output .bond file path"),
 ) -> None:
     """Export your bond as a portable .bond file."""
-    typer.echo("bond export - not yet implemented")
+    from claude_bond.commands.export_cmd import run_export
+    run_export(output=Path(output))
 
 
 @app.command(name="import")
@@ -39,7 +40,8 @@ def import_bond(
     file: str = typer.Argument(help="Path to .bond file"),
 ) -> None:
     """Import a .bond file and apply it."""
-    typer.echo("bond import - not yet implemented")
+    from claude_bond.commands.import_cmd import run_import
+    run_import(file=Path(file))
 
 
 @app.command()
@@ -47,13 +49,15 @@ def sync(
     init_remote: str = typer.Option(None, "--init", help="Initialize with git remote URL"),
 ) -> None:
     """Sync your bond via git."""
-    typer.echo("bond sync - not yet implemented")
+    from claude_bond.commands.sync_cmd import run_sync
+    run_sync(init_remote=init_remote)
 
 
 @app.command()
 def review() -> None:
     """Review pending bond changes."""
-    typer.echo("bond review - not yet implemented")
+    from claude_bond.commands.review_cmd import run_review
+    run_review()
 
 
 @app.command()
@@ -61,4 +65,5 @@ def auto(
     enable: bool = typer.Option(True, help="Enable or disable auto-merge"),
 ) -> None:
     """Toggle automatic merging of pending changes."""
-    typer.echo("bond auto - not yet implemented")
+    from claude_bond.commands.auto_cmd import run_auto
+    run_auto(enable=enable)
