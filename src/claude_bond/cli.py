@@ -1,4 +1,8 @@
+from pathlib import Path
 import typer
+
+from claude_bond.commands.init_cmd import run_init
+from claude_bond.models.bond import BOND_DIR
 
 app = typer.Typer(
     name="bond",
@@ -8,9 +12,11 @@ app = typer.Typer(
 
 
 @app.command()
-def init() -> None:
+def init(
+    no_interview: bool = typer.Option(False, "--no-interview", help="Skip interactive questions"),
+) -> None:
     """Initialize your bond by scanning ~/.claude/ and interviewing you."""
-    typer.echo("bond init - not yet implemented")
+    run_init(interactive=not no_interview)
 
 
 @app.command()
