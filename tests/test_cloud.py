@@ -5,6 +5,7 @@ from claude_bond.models.bond import BondDimension, BondMeta, DIMENSIONS, save_di
 from claude_bond.cloud.gist_sync import (
     _serialize_bond,
     _deserialize_bond,
+    _merge_bond_data,
     load_cloud_config,
     save_cloud_config,
 )
@@ -88,3 +89,78 @@ def test_deserialize_creates_dir():
         assert (dst / "identity.md").exists()
         dim = load_dimension("identity", dst)
         assert "Developer" in dim.content
+
+
+def test_merge_keeps_both_unique_items():
+    local = {
+        "version": "0.2.0",
+        "created": "2026-03-29",
+        "updated": "2026-03-30",
+        "dimensions_list": ["rules"],
+        "dimensions": {
+            "rules": {
+                "updated": "2026-03-30",
+                "source": ["scan"],
+                "content": "- No emoji\n- Be concise",
+            },
+        },
+    }
+    remote = {
+        "version": "0.2.0",
+        "created": "2026-03-29",
+        "updated": "2026-03-30",
+        "dimensions_list": ["rules"],
+        "dimensions": {
+            "rules": {
+                "updated": "2026-03-30",
+                "source": ["scan"],
+                "content": "- No emoji\n- Write tests first",
+            },
+        },
+    }
+    merged = _merge_bond_data(local, remote)
+    content = merged["dimensions"]["rules"]["content"]
+    assert "No emoji" in content
+    assert "Be concise" in content
+    assert "Write tests first" in content
+
+
+def test_merge_deduplicates():
+    local = {
+        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
+        "dimensions_list": ["style"],
+        "dimensions": {"style": {"updated": "2026-03-30", "source": ["scan"], "content": "- Chinese"}},
+    }
+    remote = {
+        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
+        "dimensions_list": ["style"],
+        "dimensions": {"style": {"updated": "2026-03-30", "source": ["scan"], "content": "- Chinese"}},
+    }
+    merged = _merge_bond_data(local, remote)
+    assert merged["dimensions"]["style"]["content"].count("Chinese") == 1
+
+
+def test_merge_handles_one_side_missing_dim():
+    local = {
+        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
+        "dimensions_list": ["rules"],
+        "dimensions": {"rules": {"updated": "2026-03-30", "source": ["scan"], "content": "- No emoji"}},
+    }
+    remote = {
+        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
+        "dimensions_list": ["memory"],
+        "dimensions": {"memory": {"updated": "2026-03-30", "source": ["scan"], "content": "- Project X"}},
+    }
+    merged = _merge_bond_data(local, remote)
+    assert "rules" in merged["dimensions"]
+    assert "memory" in merged["dimensions"]
+    assert "No emoji" in merged["dimensions"]["rules"]["content"]
+    assert "Project X" in merged["dimensions"]["memory"]["content"]
+
+
+def test_save_cloud_config_creates_dir():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        bond_dir = Path(tmpdir) / "nonexistent" / "subdir"
+        config = {"gist_id": "test123"}
+        save_cloud_config(config, bond_dir)
+        assert (bond_dir / "cloud.json").exists()
