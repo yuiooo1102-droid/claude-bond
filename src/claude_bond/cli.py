@@ -107,7 +107,62 @@ def hooks(
 
 
 @app.command()
+def diff() -> None:
+    """Show diff between last snapshot and current ~/.claude/ state."""
+    from claude_bond.commands.diff_cmd import run_diff
+    run_diff()
+
+
+@app.command()
 def tacit() -> None:
     """Show tacit mode status and detected patterns."""
     from claude_bond.commands.tacit_cmd import run_tacit_status
     run_tacit_status()
+
+
+@app.command()
+def doctor() -> None:
+    """Run health checks on the bond configuration."""
+    from claude_bond.commands.doctor_cmd import run_doctor
+    issues = run_doctor()
+    has_errors = any(i["level"] == "error" for i in issues)
+    if has_errors:
+        raise SystemExit(1)
+
+
+@app.command()
+def profile(
+    action: str = typer.Argument("list", help="list, use, create, delete, migrate"),
+    name: str = typer.Argument(None, help="Profile name"),
+    clone: str = typer.Option(None, "--clone", help="Clone from existing profile"),
+) -> None:
+    """Manage bond profiles (work, personal, etc.)."""
+    from claude_bond.commands.profile_cmd import (
+        run_profile_list,
+        run_profile_use,
+        run_profile_create,
+        run_profile_delete,
+        run_profile_migrate,
+    )
+    if action == "list":
+        run_profile_list()
+    elif action == "use":
+        if not name:
+            typer.echo("Usage: bond profile use <name>")
+            raise typer.Exit(1)
+        run_profile_use(name)
+    elif action == "create":
+        if not name:
+            typer.echo("Usage: bond profile create <name>")
+            raise typer.Exit(1)
+        run_profile_create(name, clone_from=clone)
+    elif action == "delete":
+        if not name:
+            typer.echo("Usage: bond profile delete <name>")
+            raise typer.Exit(1)
+        run_profile_delete(name)
+    elif action == "migrate":
+        run_profile_migrate()
+    else:
+        typer.echo(f"Unknown action: {action}. Use list, use, create, delete, or migrate.")
+        raise typer.Exit(1)
