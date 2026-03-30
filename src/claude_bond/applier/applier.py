@@ -35,6 +35,18 @@ def apply_bond(
         bond_lines.append("### Communication style")
         bond_lines.append(dims["style"].content)
         bond_lines.append("")
+    if "tech_prefs" in dims and dims["tech_prefs"].content:
+        bond_lines.append("### Technical preferences")
+        bond_lines.append(dims["tech_prefs"].content)
+        bond_lines.append("")
+    if "work_context" in dims and dims["work_context"].content:
+        bond_lines.append("### Work context")
+        bond_lines.append(dims["work_context"].content)
+        bond_lines.append("")
+    if "toolchain" in dims and dims["toolchain"].content:
+        bond_lines.append("### Toolchain")
+        bond_lines.append(dims["toolchain"].content)
+        bond_lines.append("")
     bond_lines.append(_BOND_SECTION_END)
     bond_section = "\n".join(bond_lines)
 

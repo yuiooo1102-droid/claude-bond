@@ -55,6 +55,9 @@ def run_init(
             "rules": [],
             "style": [],
             "memory": [],
+            "tech_prefs": [],
+            "work_context": [],
+            "toolchain": [],
         }
     else:
         online = can_use_claude()

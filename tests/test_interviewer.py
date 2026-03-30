@@ -21,6 +21,9 @@ def test_identify_gaps_no_gaps():
         "rules": ["be concise"],
         "style": ["Chinese", "short replies"],
         "memory": ["project X"],
+        "tech_prefs": ["pytest"],
+        "work_context": ["Building claude-bond"],
+        "toolchain": ["VS Code"],
     }
     gaps = identify_gaps(classified)
     assert gaps == {}
@@ -32,10 +35,13 @@ def test_build_bond_from_classified():
         "rules": ["no emoji", "no summaries"],
         "style": ["Chinese", "concise"],
         "memory": ["working on claude-bond"],
+        "tech_prefs": [],
+        "work_context": [],
+        "toolchain": [],
     }
     dimensions = build_bond_from_classified(classified)
-    assert len(dimensions) == 4
+    assert len(dimensions) == 7
     names = {d.name for d in dimensions}
-    assert names == {"identity", "rules", "style", "memory"}
+    assert names == {"identity", "rules", "style", "memory", "tech_prefs", "work_context", "toolchain"}
     identity = next(d for d in dimensions if d.name == "identity")
     assert "data scientist" in identity.content

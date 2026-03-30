@@ -50,6 +50,29 @@ def test_import_restores_bond():
         assert "Data scientist" in content
 
 
+def test_encrypted_export_import():
+    with (
+        tempfile.TemporaryDirectory() as bond_tmp,
+        tempfile.TemporaryDirectory() as out_tmp,
+        tempfile.TemporaryDirectory() as dst_tmp,
+    ):
+        src_bond = Path(bond_tmp)
+        _create_test_bond(src_bond)
+
+        bond_file = Path(out_tmp) / "encrypted.bond"
+        run_export(bond_dir=src_bond, output=bond_file, password="test123")
+
+        # Verify it's encrypted (starts with BOND magic)
+        assert bond_file.read_bytes()[:4] == b"BOND"
+
+        dst_bond = Path(dst_tmp)
+        run_import(file=bond_file, bond_dir=dst_bond, auto_apply=False, password="test123")
+
+        assert (dst_bond / "identity.md").exists()
+        content = (dst_bond / "identity.md").read_text(encoding="utf-8")
+        assert "Data scientist" in content
+
+
 def test_export_excludes_snapshot_and_pending():
     with tempfile.TemporaryDirectory() as bond_tmp, tempfile.TemporaryDirectory() as out_tmp:
         bond_dir = Path(bond_tmp)

@@ -11,6 +11,9 @@ def _create_test_bond(bond_dir: Path) -> None:
         BondDimension("rules", "2026-03-29", ["scan"], "- No emoji\n- No trailing summaries"),
         BondDimension("style", "2026-03-29", ["interview"], "- Language: Chinese\n- Style: concise"),
         BondDimension("memory", "2026-03-29", ["scan"], "- Working on claude-bond project"),
+        BondDimension("tech_prefs", "2026-03-29", ["scan"], ""),
+        BondDimension("work_context", "2026-03-29", ["scan"], ""),
+        BondDimension("toolchain", "2026-03-29", ["scan"], ""),
     ]
     for d in dims:
         save_dimension(d, bond_dir)

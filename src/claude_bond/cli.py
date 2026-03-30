@@ -29,19 +29,30 @@ def apply() -> None:
 @app.command()
 def export(
     output: str = typer.Option("my.bond", "--output", "-o", help="Output .bond file path"),
+    encrypt: bool = typer.Option(False, "--encrypt", "-e", help="Encrypt with password"),
 ) -> None:
     """Export your bond as a portable .bond file."""
     from claude_bond.commands.export_cmd import run_export
-    run_export(output=Path(output))
+
+    password = None
+    if encrypt:
+        password = typer.prompt("Enter encryption password", hide_input=True)
+        confirm = typer.prompt("Confirm password", hide_input=True)
+        if password != confirm:
+            typer.echo("Passwords don't match.")
+            raise typer.Exit(1)
+    run_export(output=Path(output), password=password)
 
 
 @app.command(name="import")
 def import_bond(
     file: str = typer.Argument(help="Path to .bond file"),
+    password: str = typer.Option(None, "--password", "-p", help="Decryption password"),
 ) -> None:
     """Import a .bond file and apply it."""
     from claude_bond.commands.import_cmd import run_import
-    run_import(file=Path(file))
+
+    run_import(file=Path(file), password=password)
 
 
 @app.command()
@@ -93,3 +104,10 @@ def hooks(
         run_hooks_uninstall()
     else:
         run_hooks_status()
+
+
+@app.command()
+def tacit() -> None:
+    """Show tacit mode status and detected patterns."""
+    from claude_bond.commands.tacit_cmd import run_tacit_status
+    run_tacit_status()

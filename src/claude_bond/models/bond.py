@@ -7,7 +7,7 @@ import yaml
 
 
 BOND_DIR = Path.home() / ".claude-bond"
-DIMENSIONS = ("identity", "rules", "style", "memory")
+DIMENSIONS = ("identity", "rules", "style", "memory", "tech_prefs", "work_context", "toolchain")
 
 
 @dataclass(frozen=True)

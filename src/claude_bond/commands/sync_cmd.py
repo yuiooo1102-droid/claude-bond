@@ -39,7 +39,20 @@ def run_sync(bond_dir: Path = BOND_DIR, init_remote: str | None = None) -> None:
     has_remote = _has_remote(bond_dir)
     if has_remote:
         console.print("[dim]Pulling...[/dim]")
-        git_pull(bond_dir)
+        pulled = git_pull(bond_dir)
+
+        if not pulled:
+            # Pull failed, likely merge conflict
+            from claude_bond.sync_engine.semantic_merge import resolve_sync_conflicts
+            console.print("[yellow]Merge conflict detected, resolving semantically...[/yellow]")
+            resolved = resolve_sync_conflicts(bond_dir)
+            if resolved:
+                console.print(f"[green]Resolved conflicts in: {', '.join(resolved)}[/green]")
+                git_commit_all(bond_dir, "bond: semantic merge resolution")
+            else:
+                console.print("[red]Could not resolve conflicts automatically. Please resolve manually.[/red]")
+                return
+
         console.print("[dim]Pushing...[/dim]")
         git_push(bond_dir)
         console.print("[bold green]Bond synced.[/bold green]")

@@ -24,6 +24,21 @@ _MEMORY_PATTERNS = re.compile(
     r"|working on|launched|completed|started|migrat|refactor|incident)",
     re.IGNORECASE,
 )
+_TECH_PREFS_PATTERNS = re.compile(
+    r"(framework|library|pattern|architect|pytest|unittest|dataclass|typing|async"
+    r"|react|vue|django|flask|fastapi|pep\s*8|black|ruff|isort|mypy|type.?hint)",
+    re.IGNORECASE,
+)
+_WORK_CONTEXT_PATTERNS = re.compile(
+    r"(team|sprint|milestone|roadmap|deadline|initiative|stakeholder|review|pr\b|pull.?request"
+    r"|jira|linear|ticket|epic|story|backlog|kanban|standup)",
+    re.IGNORECASE,
+)
+_TOOLCHAIN_PATTERNS = re.compile(
+    r"(mcp|hook|skill|plugin|extension|ide|vscode|vim|neovim|jetbrains|terminal"
+    r"|docker|kubernetes|ci/?cd|github.?action|jenkins|formatter|linter)",
+    re.IGNORECASE,
+)
 
 
 def classify_content_offline(raw_text: str) -> dict[str, list[str]]:
@@ -33,6 +48,9 @@ def classify_content_offline(raw_text: str) -> dict[str, list[str]]:
         "rules": [],
         "style": [],
         "memory": [],
+        "tech_prefs": [],
+        "work_context": [],
+        "toolchain": [],
     }
 
     lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
@@ -52,6 +70,9 @@ def classify_content_offline(raw_text: str) -> dict[str, list[str]]:
             "rules": len(_RULES_PATTERNS.findall(line)),
             "style": len(_STYLE_PATTERNS.findall(line)),
             "memory": len(_MEMORY_PATTERNS.findall(line)),
+            "tech_prefs": len(_TECH_PREFS_PATTERNS.findall(line)),
+            "work_context": len(_WORK_CONTEXT_PATTERNS.findall(line)),
+            "toolchain": len(_TOOLCHAIN_PATTERNS.findall(line)),
         }
 
         best = max(scores, key=scores.get)
