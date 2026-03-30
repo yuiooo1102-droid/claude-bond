@@ -201,7 +201,10 @@ def cloud_status(bond_dir: Path = BOND_DIR) -> dict | None:
 
 
 def _merge_bond_data(local: dict, remote: dict) -> dict:
-    """Fix #4: merge two bond data dicts, keeping unique items from both."""
+    """Merge two bond data dicts, keeping unique items from both.
+
+    TODO: Use semantic_merge when Claude is available for smarter dedup.
+    """
     merged = {
         "version": max(local.get("version", "0"), remote.get("version", "0")),
         "created": min(local.get("created", ""), remote.get("created", "")),

@@ -16,9 +16,13 @@ def run_auto(bond_dir: Path = BOND_DIR, enable: bool = True) -> None:
         console.print("[red]No bond found. Run 'bond init' first.[/red]")
         raise SystemExit(1)
 
+    auto_flag = bond_dir / ".auto"
     if enable:
+        auto_flag.touch()
+        console.print("[bold green]Auto-merge enabled.[/bold green]")
         _auto_merge_pending(bond_dir)
     else:
+        auto_flag.unlink(missing_ok=True)
         console.print("[dim]Auto-merge disabled. Use 'bond review' to review manually.[/dim]")
 
 

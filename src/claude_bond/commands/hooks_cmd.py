@@ -11,6 +11,16 @@ CLAUDE_SETTINGS = Path.home() / ".claude" / "settings.json"
 
 BOND_HOOK_MARKER = "claude-bond"
 
+APPLY_HOOK = {
+    "matcher": "",
+    "hooks": [
+        {
+            "type": "command",
+            "command": "bond apply 2>/dev/null",
+        }
+    ],
+}
+
 EVOLVE_HOOK = {
     "matcher": "",
     "hooks": [
@@ -54,6 +64,17 @@ def run_hooks_install(settings_path: Path = CLAUDE_SETTINGS) -> None:
     hooks = settings["hooks"]
     changed = False
 
+    # Install PreToolUse hook for session-start apply
+    if "PreToolUse" not in hooks:
+        hooks["PreToolUse"] = []
+
+    if not _has_bond_hook(hooks["PreToolUse"]):
+        hooks["PreToolUse"].append(APPLY_HOOK)
+        changed = True
+        console.print("[green]Installed session-start hook (PreToolUse → bond apply)[/green]")
+    else:
+        console.print("[dim]Session-start hook already installed.[/dim]")
+
     # Install Stop hook for evolve detection
     if "Stop" not in hooks:
         hooks["Stop"] = []
@@ -61,9 +82,9 @@ def run_hooks_install(settings_path: Path = CLAUDE_SETTINGS) -> None:
     if not _has_bond_hook(hooks["Stop"]):
         hooks["Stop"].append(EVOLVE_HOOK)
         changed = True
-        console.print("[green]Installed evolve detector hook (Stop)[/green]")
+        console.print("[green]Installed session-end hook (Stop → evolve detect)[/green]")
     else:
-        console.print("[dim]Evolve detector hook already installed.[/dim]")
+        console.print("[dim]Session-end hook already installed.[/dim]")
 
     if changed:
         _save_settings(settings, settings_path)

@@ -29,12 +29,12 @@ def _get_client():
 
 def _ask_via_cli(prompt: str, system: str = "") -> str:
     """Use the claude CLI (Max/subscription) to get a response."""
+    cmd = ["claude", "-p", "-"]
     if system:
-        cmd = ["claude", "-p", prompt, "--append-system-prompt", system]
-    else:
-        cmd = ["claude", "-p", prompt]
+        cmd.extend(["--append-system-prompt", system])
     result = subprocess.run(
         cmd,
+        input=prompt,
         capture_output=True,
         text=True,
         timeout=120,
@@ -106,7 +106,10 @@ def classify_content(raw_text: str) -> dict[str, list[str]]:
         end = result.rfind("}") + 1
         if start >= 0 and end > start:
             return json.loads(result[start:end])
-        return {"identity": [], "rules": [], "style": [], "memory": []}
+        return {
+            "identity": [], "rules": [], "style": [], "memory": [],
+            "tech_prefs": [], "work_context": [], "toolchain": [],
+        }
 
 
 def generate_questions(gaps: dict[str, str]) -> list[str]:
@@ -133,7 +136,7 @@ def analyze_changes(old_content: str, new_content: str) -> str:
         "You analyze changes in a user's Claude configuration files and classify them as bond updates. "
         "For each change, output a line in this format:\n"
         "- [dimension] description\n"
-        "Where dimension is one of: identity, rules, style, memory.\n"
+        "Where dimension is one of: identity, rules, style, memory, tech_prefs, work_context, toolchain.\n"
         "Group into sections: ## New, ## Updated, ## Possible (low confidence).\n"
         "If no meaningful bond changes, return 'NO_CHANGES'."
     )

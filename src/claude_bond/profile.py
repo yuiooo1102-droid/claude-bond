@@ -64,7 +64,7 @@ def migrate_to_profiles() -> bool:
 
     # Move bond files to default profile
     for item in BOND_DIR.iterdir():
-        if item.name in ("profiles", "active_profile", "tacit_signals.json", ".snapshot"):
+        if item.name in ("profiles", "active_profile", "tacit_signals.json", ".snapshot", "cloud.json"):
             continue
         if item.name.startswith("."):
             continue

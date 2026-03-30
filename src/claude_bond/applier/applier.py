@@ -19,7 +19,12 @@ def apply_bond(
     claude_dir.mkdir(parents=True, exist_ok=True)
 
     meta = load_meta(bond_dir)
-    dims = {name: load_dimension(name, bond_dir) for name in meta.dimensions}
+    dims = {}
+    for name in meta.dimensions:
+        try:
+            dims[name] = load_dimension(name, bond_dir)
+        except (FileNotFoundError, ValueError):
+            pass
 
     # Build the bond section for CLAUDE.md
     bond_lines: list[str] = [_BOND_SECTION_START, "## Bond", ""]

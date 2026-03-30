@@ -118,9 +118,43 @@ def generate_tacit_pending(bond_dir: Path = BOND_DIR) -> str | None:
     if not patterns:
         return None
 
+    # Dedup: check if these patterns are already in pending
+    existing_pending = _load_existing_pending(bond_dir)
+
+    new_patterns = [
+        p for p in patterns
+        if p["description"] not in existing_pending
+    ]
+
+    if not new_patterns:
+        return None
+
     lines = ["## Possible (low confidence)", ""]
-    for p in patterns:
+    for p in new_patterns:
         conf_pct = int(p["confidence"] * 100)
         lines.append(f"- [{p['dimension']}] {p['description']} ({conf_pct}% confidence: {p['evidence']})")
 
     return "\n".join(lines)
+
+
+def _load_existing_pending(bond_dir: Path) -> set[str]:
+    """Load descriptions from existing pending files to avoid duplicates."""
+    pending_dir = bond_dir / "pending"
+    if not pending_dir.is_dir():
+        return set()
+
+    descriptions: set[str] = set()
+    for pf in pending_dir.glob("*.md"):
+        for line in pf.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("- ["):
+                # Extract description after "] "
+                bracket_end = stripped.find("] ", 3)
+                if bracket_end > 0:
+                    desc = stripped[bracket_end + 2:]
+                    # Remove confidence suffix if present
+                    paren_start = desc.rfind(" (")
+                    if paren_start > 0:
+                        desc = desc[:paren_start]
+                    descriptions.add(desc)
+    return descriptions

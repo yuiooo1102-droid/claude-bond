@@ -3,6 +3,7 @@ import typer
 
 from claude_bond.commands.init_cmd import run_init
 from claude_bond.models.bond import BOND_DIR
+from claude_bond.profile import get_bond_dir
 
 app = typer.Typer(
     name="bond",
@@ -16,14 +17,14 @@ def init(
     no_interview: bool = typer.Option(False, "--no-interview", help="Skip interactive questions"),
 ) -> None:
     """Initialize your bond by scanning ~/.claude/ and interviewing you."""
-    run_init(interactive=not no_interview)
+    run_init(bond_dir=get_bond_dir(), interactive=not no_interview)
 
 
 @app.command()
 def apply() -> None:
     """Apply your bond to the current machine's ~/.claude/."""
     from claude_bond.commands.apply_cmd import run_apply
-    run_apply()
+    run_apply(bond_dir=get_bond_dir())
 
 
 @app.command()
@@ -41,7 +42,7 @@ def export(
         if password != confirm:
             typer.echo("Passwords don't match.")
             raise typer.Exit(1)
-    run_export(output=Path(output), password=password)
+    run_export(bond_dir=get_bond_dir(), output=Path(output), password=password)
 
 
 @app.command(name="import")
@@ -61,14 +62,14 @@ def sync(
 ) -> None:
     """Sync your bond via git."""
     from claude_bond.commands.sync_cmd import run_sync
-    run_sync(init_remote=init_remote)
+    run_sync(bond_dir=get_bond_dir(), init_remote=init_remote)
 
 
 @app.command()
 def review() -> None:
     """Review pending bond changes."""
     from claude_bond.commands.review_cmd import run_review
-    run_review()
+    run_review(bond_dir=get_bond_dir())
 
 
 @app.command()
@@ -77,14 +78,14 @@ def auto(
 ) -> None:
     """Toggle automatic merging of pending changes."""
     from claude_bond.commands.auto_cmd import run_auto
-    run_auto(enable=enable)
+    run_auto(bond_dir=get_bond_dir(), enable=enable)
 
 
 @app.command()
 def status() -> None:
     """Show current bond status and dimensions."""
     from claude_bond.commands.status_cmd import run_status
-    run_status()
+    run_status(bond_dir=get_bond_dir())
 
 
 @app.command()
@@ -110,21 +111,21 @@ def hooks(
 def diff() -> None:
     """Show diff between last snapshot and current ~/.claude/ state."""
     from claude_bond.commands.diff_cmd import run_diff
-    run_diff()
+    run_diff(bond_dir=get_bond_dir())
 
 
 @app.command()
 def tacit() -> None:
     """Show tacit mode status and detected patterns."""
     from claude_bond.commands.tacit_cmd import run_tacit_status
-    run_tacit_status()
+    run_tacit_status(bond_dir=get_bond_dir())
 
 
 @app.command()
 def doctor() -> None:
     """Run health checks on the bond configuration."""
     from claude_bond.commands.doctor_cmd import run_doctor
-    issues = run_doctor()
+    issues = run_doctor(bond_dir=get_bond_dir())
     has_errors = any(i["level"] == "error" for i in issues)
     if has_errors:
         raise SystemExit(1)
@@ -136,7 +137,7 @@ def edit(
 ) -> None:
     """Interactively edit bond dimensions."""
     from claude_bond.commands.edit_cmd import run_edit
-    run_edit(dimension=dimension)
+    run_edit(bond_dir=get_bond_dir(), dimension=dimension)
 
 
 @app.command()
@@ -153,15 +154,15 @@ def cloud(
         run_cloud_status,
     )
     if action == "init":
-        run_cloud_init()
+        run_cloud_init(bond_dir=get_bond_dir())
     elif action == "push":
-        run_cloud_push()
+        run_cloud_push(bond_dir=get_bond_dir())
     elif action == "pull":
-        run_cloud_pull(gist_id=gist_id)
+        run_cloud_pull(bond_dir=get_bond_dir(), gist_id=gist_id)
     elif action == "status":
-        run_cloud_status()
+        run_cloud_status(bond_dir=get_bond_dir())
     elif action == "sync":
-        run_cloud_sync()
+        run_cloud_sync(bond_dir=get_bond_dir())
     else:
         typer.echo(f"Unknown action: {action}. Use init, push, pull, status, or sync.")
         raise typer.Exit(1)

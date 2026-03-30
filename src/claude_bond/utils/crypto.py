@@ -1,3 +1,4 @@
+"""Bond file encryption using PBKDF2 key derivation and HMAC-SHA256 stream cipher."""
 from __future__ import annotations
 
 import hashlib
