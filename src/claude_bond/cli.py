@@ -67,3 +67,29 @@ def auto(
     """Toggle automatic merging of pending changes."""
     from claude_bond.commands.auto_cmd import run_auto
     run_auto(enable=enable)
+
+
+@app.command()
+def status() -> None:
+    """Show current bond status and dimensions."""
+    from claude_bond.commands.status_cmd import run_status
+    run_status()
+
+
+@app.command()
+def hooks(
+    install: bool = typer.Option(False, "--install", help="Install Claude Code hooks"),
+    uninstall: bool = typer.Option(False, "--uninstall", help="Remove Claude Code hooks"),
+) -> None:
+    """Manage Claude Code session hooks."""
+    from claude_bond.commands.hooks_cmd import (
+        run_hooks_install,
+        run_hooks_uninstall,
+        run_hooks_status,
+    )
+    if install:
+        run_hooks_install()
+    elif uninstall:
+        run_hooks_uninstall()
+    else:
+        run_hooks_status()

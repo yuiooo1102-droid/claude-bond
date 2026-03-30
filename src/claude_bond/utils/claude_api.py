@@ -29,13 +29,10 @@ def _get_client():
 
 def _ask_via_cli(prompt: str, system: str = "") -> str:
     """Use the claude CLI (Max/subscription) to get a response."""
-    full_prompt = f"{system}\n\n{prompt}" if system else prompt
-    cmd = ["claude", "-p", full_prompt]
     if system:
-        cmd.extend(["--append-system-prompt", system])
         cmd = ["claude", "-p", prompt, "--append-system-prompt", system]
     else:
-        cmd = ["claude", "-p", full_prompt]
+        cmd = ["claude", "-p", prompt]
     result = subprocess.run(
         cmd,
         capture_output=True,
@@ -76,12 +73,24 @@ def can_use_claude() -> bool:
 
 def classify_content(raw_text: str) -> dict[str, list[str]]:
     system = (
-        "You classify raw text extracted from a user's Claude configuration into 4 dimensions: "
-        "identity (who the user is), rules (behavioral preferences), "
-        "style (communication preferences), memory (factual memories). "
-        'Return valid JSON: {"identity": [...], "rules": [...], "style": [...], "memory": [...]}'
-        " Each value is a list of concise bullet-point strings. "
-        "If a dimension has no data, return an empty list."
+        "You are extracting a user's Claude bond profile from their configuration files. "
+        "Classify ALL relevant information into exactly 4 dimensions. Be thorough - extract every piece of useful info.\n\n"
+        "Dimensions:\n"
+        "- identity: Who the user is. Role, job title, expertise, tech stack, experience level, team, company, interests.\n"
+        "  Examples: 'Senior Python developer', 'Works on NLP projects', 'Familiar with Go and React'\n"
+        "- rules: Behavioral preferences the user has set. Things Claude should/shouldn't do. Coding conventions.\n"
+        "  Examples: 'No emoji in responses', 'Use immutable data structures', 'Follow PEP 8', 'Always write tests first'\n"
+        "- style: Communication preferences. Language, tone, verbosity, formatting.\n"
+        "  Examples: 'Respond in Chinese', 'Be concise', 'Code over explanation', 'Use markdown formatting'\n"
+        "- memory: Factual memories, project context, ongoing work, relationships, events.\n"
+        "  Examples: 'Working on claude-bond project', 'Uses deer-flow for orchestration', 'Mock only in offline tests'\n\n"
+        "Rules:\n"
+        "1. Extract ALL items, not just a few. Be comprehensive.\n"
+        "2. Each item should be a concise phrase (not a full sentence).\n"
+        "3. Deduplicate: don't repeat the same info in different words.\n"
+        "4. If content spans multiple files, merge related items.\n"
+        "5. Return ONLY valid JSON, no markdown fences or explanation.\n\n"
+        'Return format: {"identity": [...], "rules": [...], "style": [...], "memory": [...]}'
     )
     result = ask_claude(f"Classify this content:\n\n{raw_text}", system=system)
     try:
@@ -97,8 +106,9 @@ def classify_content(raw_text: str) -> dict[str, list[str]]:
 def generate_questions(gaps: dict[str, str]) -> list[str]:
     system = (
         "You generate 3-5 targeted questions to fill gaps in a user's bond profile. "
-        "Return valid JSON: a list of question strings. "
-        "Questions should be conversational and easy to answer."
+        "Ask in Chinese. Be conversational and specific.\n"
+        "Return ONLY valid JSON: a list of question strings, no markdown fences.\n"
+        "Example: [\"你主要用什么编程语言？\", \"你希望我回复用中文还是英文？\"]"
     )
     prompt = f"These dimensions need more data:\n{json.dumps(gaps, ensure_ascii=False)}"
     result = ask_claude(prompt, system=system)
