@@ -140,6 +140,34 @@ def edit(
 
 
 @app.command()
+def cloud(
+    action: str = typer.Argument("sync", help="init, push, pull, status"),
+    gist_id: str = typer.Option(None, "--id", help="Gist ID for first-time pull"),
+) -> None:
+    """Cloud sync via GitHub Gist."""
+    from claude_bond.commands.cloud_cmd import (
+        run_cloud_init,
+        run_cloud_push,
+        run_cloud_pull,
+        run_cloud_sync,
+        run_cloud_status,
+    )
+    if action == "init":
+        run_cloud_init()
+    elif action == "push":
+        run_cloud_push()
+    elif action == "pull":
+        run_cloud_pull(gist_id=gist_id)
+    elif action == "status":
+        run_cloud_status()
+    elif action == "sync":
+        run_cloud_sync()
+    else:
+        typer.echo(f"Unknown action: {action}. Use init, push, pull, status, or sync.")
+        raise typer.Exit(1)
+
+
+@app.command()
 def profile(
     action: str = typer.Argument("list", help="list, use, create, delete, migrate"),
     name: str = typer.Argument(None, help="Profile name"),
