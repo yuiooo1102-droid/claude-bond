@@ -21,69 +21,72 @@ pip install claude-bond
 
 ## 快速开始
 
-### 1. 初始化你的 bond
+### 第一步：在你的主力电脑上初始化（设备 A）
 
 ```bash
+# 1. 安装
+pip install claude-bond
+
+# 2. 初始化 -- 扫描你的 ~/.claude/ 配置，Claude 自动分类
 bond init
-```
 
-扫描 `~/.claude/` 目录，Claude 自动分类你的配置到 7 个维度，交互式补充缺失信息。
-
-不想回答问题？加 `--no-interview`：
-
-```bash
-bond init --no-interview
-```
-
-### 2. 应用到当前设备
-
-```bash
+# 3. 应用到当前设备（写入 ~/.claude/CLAUDE.md 和 memory）
 bond apply
-```
 
-将 bond 写入 `~/.claude/CLAUDE.md`（Bond section）和 `~/.claude/memory/`，Claude Code 会自动读取。
-
-### 3. 云同步（推荐）
-
-最简单的跨设备同步，用 GitHub Gist：
-
-```bash
-# 初始化云同步（创建私有 Gist）
+# 4. 开启云同步（创建私有 GitHub Gist）
 bond cloud init
+# → 输出: Gist ID: abc123def456  ← 记住这个 ID
+```
 
-# 日常同步
-bond cloud
+完成。你的主力电脑上的 Claude 关系已经打包好了。
 
-# 在新设备上拉取（用你的 Gist ID）
-bond cloud pull --id <your-gist-id>
+### 第二步：在新电脑上恢复（设备 B）
+
+```bash
+# 1. 安装
+pip install claude-bond
+
+# 2. 拉取你的 bond（用设备 A 输出的 Gist ID）
+bond cloud pull --id abc123def456
+
+# 3. 应用
 bond apply
+
+# 搞定！设备 B 上的 Claude 现在认识你了
 ```
 
-### 4. 或者用文件分享
+### 日常使用
 
 ```bash
-# 导出（可选加密）
+bond cloud          # 一键同步（任何设备上运行都行）
+bond status         # 查看 bond 状态
+bond edit           # 手动编辑 bond 维度
+bond diff           # 查看上次 apply 以来的变化
+```
+
+### 分享给朋友
+
+如果你朋友也想用你调教好的 Claude 风格：
+
+```bash
+# 你：导出（可选加密保护隐私）
 bond export -o my.bond
-bond export -o my.bond --encrypt
+bond export -o my.bond --encrypt    # 加密版
 
-# 导入
+# 朋友：导入
 bond import my.bond
-bond import my.bond --password <密码>
+bond import my.bond --password 密码  # 如果是加密的
 ```
 
-### 5. 自动进化
+### 自动进化（可选）
 
-安装 session hooks 后，Claude 会自动检测你的偏好变化：
+安装 session hooks 后，Claude 每次对话结束会自动检测你的偏好变化：
 
 ```bash
-# 安装 hooks
-bond hooks --install
-
-# 查看检测到的变化
-bond review
-
-# 或者开启自动合入
-bond auto
+bond hooks --install    # 安装 hooks（一次就行）
+bond review             # 查看检测到的变化，逐条确认
+bond auto               # 或者开启自动合入
+bond tacit              # 查看默契模式检测到的隐性习惯
 ```
 
 ## Bond 维度
