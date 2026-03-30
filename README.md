@@ -1,5 +1,257 @@
 # claude-bond
 
+**[English](#english) | [中文](#中文)**
+
+---
+
+<a id="english"></a>
+
+> Package your relationship with Claude. Make Claude recognize you on any device.
+
+claude-bond captures the unique relationship between you and Claude -- your identity, behavioral rules, communication style, technical preferences, work context, toolchain config, and shared memories -- into portable Markdown files that travel with you.
+
+## Why claude-bond
+
+- **Switch devices**: Keep Claude consistent between work and home computers
+- **Share**: Share your fine-tuned Claude relationship with friends
+- **Auto-evolve**: Claude automatically learns your implicit habits over time
+- **Multi-identity**: Switch between work/personal/project-specific bonds
+
+## Install
+
+```bash
+pip install claude-bond
+```
+
+Requirements: Python 3.11+, [Claude Code](https://claude.ai/code) CLI installed.
+
+## Quick Start
+
+### Step 1: Initialize on your primary device (Device A)
+
+```bash
+# 1. Install
+pip install claude-bond
+
+# 2. Initialize -- scan your ~/.claude/ config, Claude auto-classifies
+bond init
+
+# 3. Apply to current device (writes to ~/.claude/CLAUDE.md and memory)
+bond apply
+
+# 4. Enable cloud sync (creates a private GitHub Gist)
+bond cloud init
+# → Output: Gist ID: abc123def456  ← remember this ID
+```
+
+Done. Your Claude relationship is now packaged.
+
+### Step 2: Restore on a new device (Device B)
+
+```bash
+# 1. Install
+pip install claude-bond
+
+# 2. Pull your bond (using the Gist ID from Device A)
+bond cloud pull --id abc123def456
+
+# 3. Apply
+bond apply
+
+# Done! Claude on Device B now recognizes you
+```
+
+### Daily Usage
+
+```bash
+bond cloud          # One-click sync (run on any device)
+bond status         # View bond status
+bond edit           # Manually edit bond dimensions
+bond diff           # View changes since last apply
+```
+
+### Share with Friends
+
+```bash
+# You: export (optionally encrypted)
+bond export -o my.bond
+bond export -o my.bond --encrypt
+
+# Friend: import
+bond import my.bond
+bond import my.bond --password <password>
+```
+
+### Auto-Evolution (Optional)
+
+Install session hooks and Claude will automatically detect preference changes after each session:
+
+```bash
+bond hooks --install    # Install hooks (one-time)
+bond review             # Review detected changes
+bond auto               # Or enable auto-merge
+bond tacit              # View tacit mode patterns
+```
+
+## Bond Dimensions
+
+claude-bond organizes your Claude relationship into 7 dimensions:
+
+| Dimension | File | Content |
+|-----------|------|---------|
+| Identity | `identity.md` | Role, expertise, background |
+| Rules | `rules.md` | Behavioral preferences you've set |
+| Style | `style.md` | Language, tone, verbosity |
+| Memory | `memory.md` | Cross-session factual memories |
+| Tech Prefs | `tech_prefs.md` | Frameworks, code style, patterns |
+| Work Context | `work_context.md` | Projects, team, deadlines |
+| Toolchain | `toolchain.md` | MCP servers, hooks, IDE config |
+
+All files are human-readable Markdown. Edit directly:
+
+```bash
+bond edit          # Interactive editor
+bond edit rules    # Edit specific dimension
+```
+
+## File Structure
+
+```
+~/.claude-bond/
+  ├── identity.md       # Identity
+  ├── rules.md          # Rules
+  ├── style.md          # Style
+  ├── memory.md         # Memory
+  ├── tech_prefs.md     # Technical preferences
+  ├── work_context.md   # Work context
+  ├── toolchain.md      # Toolchain
+  ├── bond.yaml         # Metadata
+  ├── pending/          # Changes awaiting review
+  ├── cloud.json        # Cloud sync config
+  └── tacit_signals.json # Tacit mode data
+```
+
+## All Commands
+
+### Core
+
+| Command | Description |
+|---------|-------------|
+| `bond init [--no-interview]` | Initialize bond (scan + AI classify + interview) |
+| `bond apply` | Apply bond to `~/.claude/` |
+| `bond status` | View bond status and dimension overview |
+| `bond edit [dimension]` | Interactive dimension editor |
+
+### Sync & Share
+
+| Command | Description |
+|---------|-------------|
+| `bond cloud init` | Create private GitHub Gist |
+| `bond cloud` | One-click sync (pull + push) |
+| `bond cloud push` | Push to cloud |
+| `bond cloud pull [--id ID]` | Pull from cloud |
+| `bond cloud status` | View cloud sync status |
+| `bond sync [--init URL]` | Git repo sync (advanced) |
+| `bond export [-o file] [--encrypt]` | Export as .bond file |
+| `bond import <file> [--password PW]` | Import .bond file |
+
+### Evolution
+
+| Command | Description |
+|---------|-------------|
+| `bond review` | Review pending changes |
+| `bond auto` | Auto-merge high-confidence changes |
+| `bond diff` | View changes since last apply |
+| `bond tacit` | View tacit mode patterns |
+| `bond hooks --install` | Install Claude Code session hooks |
+| `bond hooks --uninstall` | Remove hooks |
+
+### Management
+
+| Command | Description |
+|---------|-------------|
+| `bond doctor` | Health check (8 diagnostics) |
+| `bond profile list` | List all profiles |
+| `bond profile create <name> [--clone from]` | Create new profile |
+| `bond profile use <name>` | Switch profile |
+| `bond profile delete <name>` | Delete profile |
+| `bond profile migrate` | Migrate to profile layout |
+
+## How Evolution Works
+
+### Auto-Detection
+
+After each Claude Code session, hooks automatically:
+
+1. Detect file changes in `~/.claude/` (compared to snapshot)
+2. Ask Claude to classify changes into bond dimensions
+3. Write changes to `pending/` directory
+4. If auto-mode is enabled, merge high-confidence changes
+
+### Tacit Mode
+
+Tracks implicit communication habits:
+
+- Response length preference (short/medium/long)
+- Language usage patterns
+- Frequent work topics
+- Repeated corrections
+
+Requires at least 3 sessions of data.
+
+### Semantic Merge
+
+When two devices modify the same dimension, `bond sync` uses Claude for semantic merging -- intelligent deduplication that preserves unique content from both sides.
+
+## Multi-Profile
+
+Maintain different bonds for different contexts:
+
+```bash
+bond profile create work --clone default
+bond profile use work
+bond edit rules
+bond profile use default
+```
+
+## Encrypted Export
+
+Protect privacy when sharing:
+
+```bash
+bond export -o my.bond --encrypt
+bond import my.bond --password <password>
+```
+
+Uses PBKDF2 key derivation (600,000 iterations) with HMAC-SHA256 stream cipher.
+
+## Backend Priority
+
+1. **Claude Code CLI** (`claude -p`) -- uses your Claude subscription, no API key needed
+2. **Anthropic API** -- requires `ANTHROPIC_API_KEY`
+3. **Offline mode** -- keyword matching (limited accuracy)
+
+Most users just need Claude Code installed. No API key required.
+
+## Notes for Claude
+
+If you are Claude reading this project's code:
+
+- Bond files use YAML frontmatter + Markdown content
+- Frontmatter fields: `dimension`, `updated`, `source`
+- `bond apply` manages a section in CLAUDE.md between `<!-- bond:start -->` / `<!-- bond:end -->`
+- Do not modify content outside these markers
+- Pending files use `## New` / `## Updated` / `## Possible (low confidence)` sections
+- Each pending item: `- [dimension] description`
+
+## License
+
+MIT
+
+---
+
+<a id="中文"></a>
+
 > 打包你和 Claude 的关系，让 Claude 在任何设备都认识你
 
 claude-bond 捕获你与 Claude 之间独特的关系 -- 你的身份、行为规矩、沟通风格、技术偏好、工作上下文、工具链配置和共享记忆 -- 打包成可移植的 Markdown 文件，跟着你走。
@@ -66,8 +318,6 @@ bond diff           # 查看上次 apply 以来的变化
 
 ### 分享给朋友
 
-如果你朋友也想用你调教好的 Claude 风格：
-
 ```bash
 # 你：导出（可选加密保护隐私）
 bond export -o my.bond
@@ -108,23 +358,6 @@ claude-bond 将你和 Claude 的关系分为 7 个维度：
 ```bash
 bond edit          # 交互式编辑
 bond edit rules    # 直接编辑指定维度
-```
-
-## Bond 文件结构
-
-```
-~/.claude-bond/
-  ├── identity.md       # 用户画像
-  ├── rules.md          # 行为规矩
-  ├── style.md          # 沟通风格
-  ├── memory.md         # 关键记忆
-  ├── tech_prefs.md     # 技术偏好
-  ├── work_context.md   # 工作上下文
-  ├── toolchain.md      # 工具链配置
-  ├── bond.yaml         # 元信息
-  ├── pending/          # 待确认的变化
-  ├── cloud.json        # 云同步配置
-  └── tacit_signals.json # 默契模式数据
 ```
 
 ## 全部命令
@@ -195,10 +428,6 @@ bond edit rules    # 直接编辑指定维度
 
 需要至少 3 个 session 的数据才能开始检测。
 
-```bash
-bond tacit    # 查看检测到的模式
-```
-
 ### 语义合并
 
 当两台设备同时修改了同一维度，`bond sync` 会用 Claude 做语义合并 -- 智能去重，保留双方的独特内容，而非简单的 git 文本合并。
@@ -208,16 +437,9 @@ bond tacit    # 查看检测到的模式
 为不同场景维护不同的 bond：
 
 ```bash
-# 创建工作 profile（克隆自默认）
 bond profile create work --clone default
-
-# 切换到工作 profile
 bond profile use work
-
-# 修改工作 profile 的规矩
 bond edit rules
-
-# 切回默认
 bond profile use default
 ```
 
@@ -226,33 +448,19 @@ bond profile use default
 分享 bond 时保护隐私：
 
 ```bash
-# 加密导出（会要求输入密码）
 bond export -o my.bond --encrypt
-
-# 对方导入时需要密码
 bond import my.bond --password <密码>
 ```
 
-使用 AES-256 加密，PBKDF2 密钥派生（600,000 次迭代）。
+使用 PBKDF2 密钥派生（600,000 次迭代）+ HMAC-SHA256 流加密。
 
 ## 后端优先级
-
-claude-bond 按以下顺序选择 AI 后端：
 
 1. **Claude Code CLI** (`claude -p`) -- 使用你的 Claude 订阅，无需 API key
 2. **Anthropic API** -- 需要设置 `ANTHROPIC_API_KEY`
 3. **离线模式** -- 关键词匹配分类（精度有限）
 
 大多数用户只需安装 Claude Code 即可，不需要 API key。
-
-## 技术栈
-
-- **CLI 框架**: Typer
-- **AI 后端**: Claude Code CLI / Anthropic SDK
-- **加密**: PBKDF2 + HMAC-SHA256
-- **云同步**: GitHub Gist (via `gh` CLI)
-- **Git 同步**: subprocess
-- **输出格式化**: Rich
 
 ## 给 Claude 的说明
 
