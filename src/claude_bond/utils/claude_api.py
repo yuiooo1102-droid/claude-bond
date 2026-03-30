@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import shutil
 import subprocess
 
@@ -9,6 +10,8 @@ import subprocess
 MODEL = "claude-sonnet-4-20250514"
 
 _client = None
+
+_IS_WINDOWS = platform.system() == "Windows"
 
 
 def has_api_key() -> bool:
@@ -38,6 +41,13 @@ def _ask_via_cli(prompt: str, system: str = "") -> str:
         capture_output=True,
         text=True,
         timeout=120,
+        # On Windows, claude is installed as a .cmd script via npm.
+        # subprocess cannot find .cmd files without shell=True.
+        shell=_IS_WINDOWS,
+        # Windows defaults to the system locale (e.g. GBK) for subprocess
+        # I/O, which fails on UTF-8 content from Claude. Force UTF-8.
+        encoding="utf-8",
+        errors="replace",
     )
     if result.returncode != 0:
         raise RuntimeError(f"claude CLI failed: {result.stderr}")
