@@ -16,6 +16,16 @@ from claude_bond.models.bond import (
     save_dimension,
     save_meta,
 )
+from claude_bond.cloud.three_way_merge import (
+    save_sync_base,
+    load_sync_base,
+    has_sync_base,
+    load_local_state,
+    parse_remote_state,
+    three_way_merge,
+    apply_merged_state,
+    count_items,
+)
 
 
 CLOUD_CONFIG = "cloud.json"
@@ -48,7 +58,7 @@ def load_cloud_config(bond_dir: Path = BOND_DIR) -> dict:
 
 
 def save_cloud_config(config: dict, bond_dir: Path = BOND_DIR) -> None:
-    bond_dir.mkdir(parents=True, exist_ok=True)  # Fix #2: ensure dir exists
+    bond_dir.mkdir(parents=True, exist_ok=True)
     path = bond_dir / CLOUD_CONFIG
     path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -58,7 +68,6 @@ def cloud_init(bond_dir: Path = BOND_DIR) -> str:
     if not has_gh_cli():
         raise RuntimeError("gh CLI not found. Install: https://cli.github.com")
 
-    # Fix #6: friendly auth check
     if not check_gh_auth():
         raise RuntimeError(
             "GitHub 未登录。请先运行: gh auth login"
@@ -73,7 +82,6 @@ def cloud_init(bond_dir: Path = BOND_DIR) -> str:
 
     bond_data = _serialize_bond(bond_dir)
 
-    # Fix #3: use tempfile for safe cleanup
     with tempfile.NamedTemporaryFile(
         mode="w",
         suffix=".json",
@@ -85,7 +93,6 @@ def cloud_init(bond_dir: Path = BOND_DIR) -> str:
         tmp_path = Path(f.name)
 
     try:
-        # Fix #1: gh gist create takes file path directly
         result = _run_gh([
             "gist", "create",
             "--public=false",
@@ -106,11 +113,13 @@ def cloud_init(bond_dir: Path = BOND_DIR) -> str:
     config["gist_url"] = gist_url
     save_cloud_config(config, bond_dir)
 
+    save_sync_base(bond_dir)
+
     return gist_id
 
 
-def cloud_push(bond_dir: Path = BOND_DIR) -> None:
-    """Push local bond to gist."""
+def cloud_push(bond_dir: Path = BOND_DIR, force: bool = False) -> None:
+    """Push local bond to gist. Protected against accidental overwrites."""
     config = load_cloud_config(bond_dir)
     gist_id = config.get("gist_id")
     if not gist_id:
@@ -119,9 +128,116 @@ def cloud_push(bond_dir: Path = BOND_DIR) -> None:
     if not check_gh_auth():
         raise RuntimeError("GitHub 未登录。请先运行: gh auth login")
 
-    bond_data = _serialize_bond(bond_dir)
+    # Push protection: require sync base (means we've pulled at least once)
+    if not force and not has_sync_base(bond_dir):
+        # Check if this is the device that did cloud init (has gist_url in config)
+        if not config.get("gist_url"):
+            raise RuntimeError(
+                "从未同步过。请先运行 bond cloud pull 拉取云端数据。\n"
+                "如确定要覆盖云端，使用 bond cloud push --force"
+            )
 
-    # Fix #1 & #3: use tempfile, correct gh gist edit usage
+    # Push protection: warn if local has significantly fewer items than remote
+    if not force:
+        try:
+            remote_data = _fetch_remote(gist_id)
+            if remote_data:
+                remote_count = sum(
+                    len([l for l in d.get("content", "").splitlines() if l.strip()])
+                    for d in remote_data.get("dimensions", {}).values()
+                )
+                local_count = count_items(bond_dir)
+                if remote_count > 0 and local_count < remote_count * 0.5:
+                    raise RuntimeError(
+                        f"⚠ 本地 {local_count} 条，云端 {remote_count} 条。\n"
+                        f"  这看起来像是新设备，建议先 bond cloud pull。\n"
+                        f"  确定要覆盖？使用 bond cloud push --force"
+                    )
+        except json.JSONDecodeError:
+            pass  # Remote empty or invalid, safe to push
+
+    bond_data = _serialize_bond(bond_dir)
+    _upload_to_gist(gist_id, bond_data, bond_dir)
+
+    # Update sync base after successful push
+    save_sync_base(bond_dir)
+
+    config["last_push"] = datetime.now().isoformat()
+    save_cloud_config(config, bond_dir)
+
+
+def cloud_pull(bond_dir: Path = BOND_DIR) -> dict:
+    """Pull bond from gist with three-way merge."""
+    config = load_cloud_config(bond_dir)
+    gist_id = config.get("gist_id")
+    if not gist_id:
+        raise RuntimeError("Cloud not initialized. Run 'bond cloud init' first.")
+
+    if not check_gh_auth():
+        raise RuntimeError("GitHub 未登录。请先运行: gh auth login")
+
+    remote_data = _fetch_remote(gist_id)
+    if not remote_data:
+        raise RuntimeError("Failed to fetch remote data.")
+
+    if has_sync_base(bond_dir):
+        # Three-way merge
+        base = load_sync_base(bond_dir)
+        local = load_local_state(bond_dir)
+        remote = parse_remote_state(remote_data)
+        merged = three_way_merge(base, local, remote)
+        apply_merged_state(merged, bond_dir, remote_data)
+    else:
+        # First pull: no base, just write remote data
+        _deserialize_bond(remote_data, bond_dir)
+
+    # Save sync base after pull
+    save_sync_base(bond_dir)
+
+    config["last_pull"] = datetime.now().isoformat()
+    save_cloud_config(config, bond_dir)
+
+    return remote_data
+
+
+def cloud_sync(bond_dir: Path = BOND_DIR) -> None:
+    """Smart sync: three-way merge pull, then push."""
+    config = load_cloud_config(bond_dir)
+    gist_id = config.get("gist_id")
+    if not gist_id:
+        raise RuntimeError("Cloud not initialized. Run 'bond cloud init' first.")
+
+    # Pull with three-way merge
+    try:
+        cloud_pull(bond_dir)
+    except RuntimeError:
+        pass  # Remote might be empty on first sync
+
+    # Push merged result (force=True since we just merged)
+    cloud_push(bond_dir, force=True)
+
+
+def cloud_status(bond_dir: Path = BOND_DIR) -> dict | None:
+    """Get cloud sync status."""
+    config = load_cloud_config(bond_dir)
+    if not config.get("gist_id"):
+        return None
+    return config
+
+
+def _fetch_remote(gist_id: str) -> dict | None:
+    """Fetch remote bond data from gist."""
+    result = _run_gh(["gist", "view", gist_id, "-f", "_bond_cloud.json", "--raw"])
+    if result.returncode != 0:
+        return None
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def _upload_to_gist(gist_id: str, bond_data: dict, bond_dir: Path) -> None:
+    """Upload bond data to gist."""
     with tempfile.NamedTemporaryFile(
         mode="w",
         suffix=".json",
@@ -138,119 +254,7 @@ def cloud_push(bond_dir: Path = BOND_DIR) -> None:
         tmp_path.unlink(missing_ok=True)
 
     if result.returncode != 0:
-        raise RuntimeError(f"Failed to push to gist: {result.stderr}")
-
-    # Update last push timestamp
-    config["last_push"] = datetime.now().isoformat()
-    save_cloud_config(config, bond_dir)
-
-
-def cloud_pull(bond_dir: Path = BOND_DIR) -> dict:
-    """Pull bond from gist. Returns the pulled data dict."""
-    config = load_cloud_config(bond_dir)
-    gist_id = config.get("gist_id")
-    if not gist_id:
-        raise RuntimeError("Cloud not initialized. Run 'bond cloud init' first.")
-
-    if not check_gh_auth():
-        raise RuntimeError("GitHub 未登录。请先运行: gh auth login")
-
-    result = _run_gh(["gist", "view", gist_id, "-f", "_bond_cloud.json", "--raw"])
-    if result.returncode != 0:
-        raise RuntimeError(f"Failed to pull from gist: {result.stderr}")
-
-    bond_data = json.loads(result.stdout)
-    _deserialize_bond(bond_data, bond_dir)
-
-    config["last_pull"] = datetime.now().isoformat()
-    save_cloud_config(config, bond_dir)
-
-    return bond_data
-
-
-def cloud_sync(bond_dir: Path = BOND_DIR) -> None:
-    """Smart sync: merge remote and local, then push."""
-    config = load_cloud_config(bond_dir)
-    gist_id = config.get("gist_id")
-    if not gist_id:
-        raise RuntimeError("Cloud not initialized. Run 'bond cloud init' first.")
-
-    # Fix #4: smart merge instead of blind overwrite
-    # Step 1: serialize local state BEFORE pulling
-    local_data = _serialize_bond(bond_dir)
-
-    # Step 2: pull remote
-    result = _run_gh(["gist", "view", gist_id, "-f", "_bond_cloud.json", "--raw"])
-    if result.returncode == 0:
-        remote_data = json.loads(result.stdout)
-        # Step 3: merge remote into local
-        merged_data = _merge_bond_data(local_data, remote_data)
-        _deserialize_bond(merged_data, bond_dir)
-    # If pull fails (no remote yet), just use local
-
-    # Step 4: push merged result
-    cloud_push(bond_dir)
-
-
-def cloud_status(bond_dir: Path = BOND_DIR) -> dict | None:
-    """Get cloud sync status."""
-    config = load_cloud_config(bond_dir)
-    if not config.get("gist_id"):
-        return None
-    return config
-
-
-def _merge_bond_data(local: dict, remote: dict) -> dict:
-    """Merge two bond data dicts, keeping unique items from both.
-
-    TODO: Use semantic_merge when Claude is available for smarter dedup.
-    """
-    merged = {
-        "version": max(local.get("version", "0"), remote.get("version", "0")),
-        "created": min(local.get("created", ""), remote.get("created", "")),
-        "updated": max(local.get("updated", ""), remote.get("updated", "")),
-        "dimensions_list": local.get("dimensions_list", list(DIMENSIONS)),
-    }
-
-    # Merge dimensions
-    local_dims = local.get("dimensions", {})
-    remote_dims = remote.get("dimensions", {})
-    all_dim_names = set(local_dims.keys()) | set(remote_dims.keys())
-
-    merged_dims: dict = {}
-    for dim_name in all_dim_names:
-        local_dim = local_dims.get(dim_name)
-        remote_dim = remote_dims.get(dim_name)
-
-        if local_dim and not remote_dim:
-            merged_dims[dim_name] = local_dim
-        elif remote_dim and not local_dim:
-            merged_dims[dim_name] = remote_dim
-        elif local_dim and remote_dim:
-            # Both have it: merge content lines
-            local_lines = set(
-                line.strip() for line in local_dim["content"].splitlines() if line.strip()
-            )
-            remote_lines = set(
-                line.strip() for line in remote_dim["content"].splitlines() if line.strip()
-            )
-            all_lines = sorted(local_lines | remote_lines)
-            merged_dims[dim_name] = {
-                "updated": max(local_dim["updated"], remote_dim["updated"]),
-                "source": sorted(set(local_dim["source"] + remote_dim["source"])),
-                "content": "\n".join(all_lines),
-            }
-
-    merged["dimensions"] = merged_dims
-
-    # Ensure dimensions_list covers all merged dims
-    dim_list = list(merged["dimensions_list"])
-    for name in merged_dims:
-        if name not in dim_list:
-            dim_list.append(name)
-    merged["dimensions_list"] = dim_list
-
-    return merged
+        raise RuntimeError(f"Failed to upload to gist: {result.stderr}")
 
 
 def _serialize_bond(bond_dir: Path) -> dict:

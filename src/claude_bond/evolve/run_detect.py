@@ -32,6 +32,27 @@ def main() -> None:
         from claude_bond.commands.auto_cmd import _auto_merge_pending
         _auto_merge_pending(BOND_DIR)
 
+    # Auto cloud sync if configured
+    _auto_cloud_sync()
+
+
+def _auto_cloud_sync() -> None:
+    """Push to cloud if cloud sync is configured."""
+    from claude_bond.cloud.gist_sync import load_cloud_config, has_gh_cli, check_gh_auth
+
+    config = load_cloud_config(BOND_DIR)
+    if not config.get("gist_id"):
+        return
+
+    if not has_gh_cli() or not check_gh_auth():
+        return
+
+    try:
+        from claude_bond.cloud.gist_sync import cloud_sync
+        cloud_sync(BOND_DIR)
+    except Exception:
+        pass  # Silent fail - don't break session end for sync errors
+
 
 if __name__ == "__main__":
     main()

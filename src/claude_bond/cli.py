@@ -144,6 +144,7 @@ def edit(
 def cloud(
     action: str = typer.Argument("sync", help="init, push, pull, status"),
     gist_id: str = typer.Option(None, "--id", help="Gist ID for first-time pull"),
+    force: bool = typer.Option(False, "--force", help="Force push (skip protection)"),
 ) -> None:
     """Cloud sync via GitHub Gist."""
     from claude_bond.commands.cloud_cmd import (
@@ -156,7 +157,7 @@ def cloud(
     if action == "init":
         run_cloud_init(bond_dir=get_bond_dir())
     elif action == "push":
-        run_cloud_push(bond_dir=get_bond_dir())
+        run_cloud_push(bond_dir=get_bond_dir(), force=force)
     elif action == "pull":
         run_cloud_pull(bond_dir=get_bond_dir(), gist_id=gist_id)
     elif action == "status":

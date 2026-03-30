@@ -38,11 +38,11 @@ def run_cloud_init(bond_dir: Path = BOND_DIR) -> None:
         raise SystemExit(1)
 
 
-def run_cloud_push(bond_dir: Path = BOND_DIR) -> None:
+def run_cloud_push(bond_dir: Path = BOND_DIR, force: bool = False) -> None:
     from claude_bond.cloud.gist_sync import cloud_push
 
     try:
-        cloud_push(bond_dir)
+        cloud_push(bond_dir, force=force)
         console.print("[bold green]Bond pushed to cloud.[/bold green]")
     except RuntimeError as e:
         console.print(f"[red]{e}[/red]")

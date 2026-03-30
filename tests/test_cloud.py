@@ -5,10 +5,10 @@ from claude_bond.models.bond import BondDimension, BondMeta, DIMENSIONS, save_di
 from claude_bond.cloud.gist_sync import (
     _serialize_bond,
     _deserialize_bond,
-    _merge_bond_data,
     load_cloud_config,
     save_cloud_config,
 )
+from claude_bond.cloud.three_way_merge import three_way_merge, parse_remote_state
 
 
 def _create_test_bond(bond_dir: Path) -> None:
@@ -92,70 +92,33 @@ def test_deserialize_creates_dir():
 
 
 def test_merge_keeps_both_unique_items():
-    local = {
-        "version": "0.2.0",
-        "created": "2026-03-29",
-        "updated": "2026-03-30",
-        "dimensions_list": ["rules"],
-        "dimensions": {
-            "rules": {
-                "updated": "2026-03-30",
-                "source": ["scan"],
-                "content": "- No emoji\n- Be concise",
-            },
-        },
-    }
-    remote = {
-        "version": "0.2.0",
-        "created": "2026-03-29",
-        "updated": "2026-03-30",
-        "dimensions_list": ["rules"],
-        "dimensions": {
-            "rules": {
-                "updated": "2026-03-30",
-                "source": ["scan"],
-                "content": "- No emoji\n- Write tests first",
-            },
-        },
-    }
-    merged = _merge_bond_data(local, remote)
-    content = merged["dimensions"]["rules"]["content"]
-    assert "No emoji" in content
-    assert "Be concise" in content
-    assert "Write tests first" in content
+    # Three-way merge: no base means both sides added their items
+    base: dict[str, set[str]] = {}
+    local = {"rules": {"- No emoji", "- Be concise"}}
+    remote = {"rules": {"- No emoji", "- Write tests first"}}
+    merged = three_way_merge(base, local, remote)
+    assert "- No emoji" in merged["rules"]
+    assert "- Be concise" in merged["rules"]
+    assert "- Write tests first" in merged["rules"]
 
 
 def test_merge_deduplicates():
-    local = {
-        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
-        "dimensions_list": ["style"],
-        "dimensions": {"style": {"updated": "2026-03-30", "source": ["scan"], "content": "- Chinese"}},
-    }
-    remote = {
-        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
-        "dimensions_list": ["style"],
-        "dimensions": {"style": {"updated": "2026-03-30", "source": ["scan"], "content": "- Chinese"}},
-    }
-    merged = _merge_bond_data(local, remote)
-    assert merged["dimensions"]["style"]["content"].count("Chinese") == 1
+    base: dict[str, set[str]] = {}
+    local = {"style": {"- Chinese"}}
+    remote = {"style": {"- Chinese"}}
+    merged = three_way_merge(base, local, remote)
+    assert merged["style"] == {"- Chinese"}
 
 
 def test_merge_handles_one_side_missing_dim():
-    local = {
-        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
-        "dimensions_list": ["rules"],
-        "dimensions": {"rules": {"updated": "2026-03-30", "source": ["scan"], "content": "- No emoji"}},
-    }
-    remote = {
-        "version": "0.2.0", "created": "2026-03-29", "updated": "2026-03-30",
-        "dimensions_list": ["memory"],
-        "dimensions": {"memory": {"updated": "2026-03-30", "source": ["scan"], "content": "- Project X"}},
-    }
-    merged = _merge_bond_data(local, remote)
-    assert "rules" in merged["dimensions"]
-    assert "memory" in merged["dimensions"]
-    assert "No emoji" in merged["dimensions"]["rules"]["content"]
-    assert "Project X" in merged["dimensions"]["memory"]["content"]
+    base: dict[str, set[str]] = {}
+    local = {"rules": {"- No emoji"}}
+    remote = {"memory": {"- Project X"}}
+    merged = three_way_merge(base, local, remote)
+    assert "rules" in merged
+    assert "memory" in merged
+    assert "- No emoji" in merged["rules"]
+    assert "- Project X" in merged["memory"]
 
 
 def test_save_cloud_config_creates_dir():
