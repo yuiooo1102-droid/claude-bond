@@ -131,6 +131,15 @@ def doctor() -> None:
 
 
 @app.command()
+def edit(
+    dimension: str = typer.Argument(None, help="Dimension to edit directly"),
+) -> None:
+    """Interactively edit bond dimensions."""
+    from claude_bond.commands.edit_cmd import run_edit
+    run_edit(dimension=dimension)
+
+
+@app.command()
 def profile(
     action: str = typer.Argument("list", help="list, use, create, delete, migrate"),
     name: str = typer.Argument(None, help="Profile name"),

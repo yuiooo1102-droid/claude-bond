@@ -11,12 +11,16 @@ def main() -> None:
     if not (BOND_DIR / ".snapshot").exists():
         return
 
+    # Collect tacit signal from this session's changes
+    from claude_bond.evolve.signal_collector import collect_session_signal
+    collect_session_signal()
+
     # Explicit change detection
     changes = detect_changes()
     if changes:
         save_pending(BOND_DIR, changes)
 
-    # Tacit pattern analysis
+    # Tacit pattern analysis (across accumulated signals)
     from claude_bond.evolve.tacit import generate_tacit_pending
     tacit_changes = generate_tacit_pending(BOND_DIR)
     if tacit_changes:
