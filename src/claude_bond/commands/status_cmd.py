@@ -82,4 +82,11 @@ def run_status(bond_dir: Path = BOND_DIR) -> None:
     else:
         console.print("  [dim]Sync: not configured[/dim]")
 
+    # Update check
+    from claude_bond.utils.update_check import check_for_update
+    new_version = check_for_update()
+    if new_version:
+        console.print(f"  [yellow bold]⬆ New version available: {new_version}[/yellow bold]")
+        console.print(f"    pip install --upgrade claude-bond")
+
     console.print()
