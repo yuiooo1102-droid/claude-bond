@@ -52,19 +52,16 @@ def detect_changes(
 
 
 def save_pending(bond_dir: Path, changes: str) -> Path:
+    import os
     pending_dir = bond_dir / "pending"
     pending_dir.mkdir(exist_ok=True)
 
     today = date.today().isoformat()
-    path = pending_dir / f"{today}.md"
+    session_id = os.urandom(4).hex()
+    path = pending_dir / f"{today}_{session_id}.md"
 
     header = f"---\ndate: {today}\n---\n\n"
-
-    if path.exists():
-        existing = path.read_text(encoding="utf-8")
-        content = existing + "\n" + changes
-    else:
-        content = header + changes
+    content = header + changes
 
     path.write_text(content, encoding="utf-8")
     return path
