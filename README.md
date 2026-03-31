@@ -40,7 +40,7 @@ bond init
 bond apply
 
 # 4. Enable cloud sync (creates a private GitHub Gist)
-bond cloud init
+bond sync --init
 # → Output: Gist ID: abc123def456  ← remember this ID
 ```
 
@@ -53,7 +53,7 @@ Done. Your Claude relationship is now packaged.
 pip install claude-bond
 
 # 2. Pull your bond (using the Gist ID from Device A)
-bond cloud pull --id abc123def456
+bond sync --id abc123def456
 
 # 3. Apply
 bond apply
@@ -64,10 +64,10 @@ bond apply
 ### Daily Usage
 
 ```bash
-bond cloud          # One-click sync (run on any device)
-bond status         # View bond status
+bond sync           # One-click sync (run on any device)
+bond                # View bond status
 bond edit           # Manually edit bond dimensions
-bond diff           # View changes since last apply
+bond --diff         # View changes since last apply
 ```
 
 ### Share with Friends
@@ -84,13 +84,12 @@ bond import my.bond --password <password>
 
 ### Auto-Evolution (Optional)
 
-Install session hooks and Claude will automatically detect preference changes after each session:
+Hooks are installed automatically during `bond init`. Claude will detect preference changes after each session:
 
 ```bash
-bond hooks --install    # Install hooks (one-time)
 bond review             # Review detected changes
-bond auto               # Or enable auto-merge
-bond tacit              # View tacit mode patterns
+bond review --auto      # Or enable auto-merge
+bond --tacit            # View tacit mode patterns
 ```
 
 ## Bond Dimensions
@@ -133,49 +132,47 @@ bond edit rules    # Edit specific dimension
 
 ## All Commands
 
-### Core
+### Daily Use
 
 | Command | Description |
 |---------|-------------|
-| `bond init [--no-interview]` | Initialize bond (scan + AI classify + interview) |
-| `bond apply` | Apply bond to `~/.claude/` |
-| `bond status` | View bond status and dimension overview |
+| `bond` | Show bond status overview |
+| `bond init` | Initialize bond (scan + classify + install hooks) |
+| `bond sync` | Cloud sync (GitHub Gist) |
 | `bond edit [dimension]` | Interactive dimension editor |
 
-### Sync & Share
-
-| Command | Description |
-|---------|-------------|
-| `bond cloud init` | Create private GitHub Gist |
-| `bond cloud` | One-click sync (pull + push) |
-| `bond cloud push` | Push to cloud |
-| `bond cloud pull [--id ID]` | Pull from cloud |
-| `bond cloud status` | View cloud sync status |
-| `bond sync [--init URL]` | Git repo sync (advanced) |
-| `bond export [-o file] [--encrypt]` | Export as .bond file |
-| `bond import <file> [--password PW]` | Import .bond file |
-
-### Evolution
+### Occasionally
 
 | Command | Description |
 |---------|-------------|
 | `bond review` | Review pending changes |
-| `bond auto` | Auto-merge high-confidence changes |
-| `bond diff` | View changes since last apply |
-| `bond tacit` | View tacit mode patterns |
-| `bond hooks --install` | Install Claude Code session hooks |
-| `bond hooks --uninstall` | Remove hooks |
+| `bond review --auto` | Enable auto-merge |
+| `bond export [-o file] [--encrypt]` | Export as .bond file |
+| `bond import <file> [--password PW]` | Import .bond file |
 
-### Management
+### Flags on `bond`
+
+| Flag | Description |
+|------|-------------|
+| `bond --check` | Health check (8 diagnostics) |
+| `bond --diff` | Show changes since last apply |
+| `bond --tacit` | Show tacit mode patterns |
+
+### Sync Options
 
 | Command | Description |
 |---------|-------------|
-| `bond doctor` | Health check (8 diagnostics) |
-| `bond profile list` | List all profiles |
-| `bond profile create <name> [--clone from]` | Create new profile |
-| `bond profile use <name>` | Switch profile |
-| `bond profile delete <name>` | Delete profile |
-| `bond profile migrate` | Migrate to profile layout |
+| `bond sync --init` | Set up cloud sync (create private Gist) |
+| `bond sync --id <ID>` | Pull from a Gist ID (new device) |
+| `bond sync --force` | Force push (skip protection) |
+| `bond sync --git <URL>` | Use git repo sync instead |
+
+### Advanced
+
+| Command | Description |
+|---------|-------------|
+| `bond apply` | Manually apply bond (auto on session start) |
+| `bond profile list\|use\|create\|delete` | Manage profiles |
 
 ## How Evolution Works
 
@@ -286,7 +283,7 @@ bond init
 bond apply
 
 # 4. 开启云同步（创建私有 GitHub Gist）
-bond cloud init
+bond sync --init
 # → 输出: Gist ID: abc123def456  ← 记住这个 ID
 ```
 
@@ -299,7 +296,7 @@ bond cloud init
 pip install claude-bond
 
 # 2. 拉取你的 bond（用设备 A 输出的 Gist ID）
-bond cloud pull --id abc123def456
+bond sync --id abc123def456
 
 # 3. 应用
 bond apply
@@ -310,10 +307,10 @@ bond apply
 ### 日常使用
 
 ```bash
-bond cloud          # 一键同步（任何设备上运行都行）
-bond status         # 查看 bond 状态
+bond sync           # 一键同步（任何设备上运行都行）
+bond                # 查看 bond 状态
 bond edit           # 手动编辑 bond 维度
-bond diff           # 查看上次 apply 以来的变化
+bond --diff         # 查看上次 apply 以来的变化
 ```
 
 ### 分享给朋友
@@ -330,13 +327,12 @@ bond import my.bond --password 密码  # 如果是加密的
 
 ### 自动进化（可选）
 
-安装 session hooks 后，Claude 每次对话结束会自动检测你的偏好变化：
+`bond init` 时 hooks 已自动安装。Claude 每次对话结束会自动检测你的偏好变化：
 
 ```bash
-bond hooks --install    # 安装 hooks（一次就行）
 bond review             # 查看检测到的变化，逐条确认
-bond auto               # 或者开启自动合入
-bond tacit              # 查看默契模式检测到的隐性习惯
+bond review --auto      # 或者开启自动合入
+bond --tacit            # 查看默契模式检测到的隐性习惯
 ```
 
 ## Bond 维度
@@ -362,49 +358,47 @@ bond edit rules    # 直接编辑指定维度
 
 ## 全部命令
 
-### 核心命令
+### 日常使用
 
 | 命令 | 说明 |
 |------|------|
-| `bond init [--no-interview]` | 初始化 bond，扫描 + AI 分类 + 对话补充 |
-| `bond apply` | 应用 bond 到当前设备的 `~/.claude/` |
-| `bond status` | 查看 bond 状态、维度概览、pending 数量 |
-| `bond edit [dimension]` | 交互式编辑 bond 维度 |
+| `bond` | 查看 bond 状态概览 |
+| `bond init` | 初始化 bond（扫描 + 分类 + 装 hooks） |
+| `bond sync` | 云同步（GitHub Gist） |
+| `bond edit [dimension]` | 交互式编辑维度 |
 
-### 同步与分享
+### 偶尔使用
 
 | 命令 | 说明 |
 |------|------|
-| `bond cloud init` | 创建私有 GitHub Gist 作为云端 |
-| `bond cloud` | 一键同步（pull + push） |
-| `bond cloud push` | 推送到云端 |
-| `bond cloud pull [--id ID]` | 从云端拉取 |
-| `bond cloud status` | 查看云同步状态 |
-| `bond sync [--init URL]` | Git 仓库同步（高级用户） |
-| `bond export [-o file] [--encrypt]` | 导出为 .bond 文件（支持加密） |
+| `bond review` | 审核 pending 变化 |
+| `bond review --auto` | 开启自动合入 |
+| `bond export [-o file] [--encrypt]` | 导出为 .bond 文件 |
 | `bond import <file> [--password PW]` | 导入 .bond 文件 |
 
-### 进化与审核
+### bond 命令 flag
+
+| Flag | 说明 |
+|------|------|
+| `bond --check` | 健康检查（8 项诊断） |
+| `bond --diff` | 查看上次 apply 以来的变化 |
+| `bond --tacit` | 查看默契模式检测到的隐性习惯 |
+
+### 同步选项
 
 | 命令 | 说明 |
 |------|------|
-| `bond review` | 审核 pending 变化，逐条确认/丢弃 |
-| `bond auto` | 自动合入高置信度变化 |
-| `bond diff` | 查看上次 apply 以来 `~/.claude/` 的变化 |
-| `bond tacit` | 查看默契模式检测到的隐性习惯 |
-| `bond hooks --install` | 安装 Claude Code session hooks |
-| `bond hooks --uninstall` | 卸载 hooks |
+| `bond sync --init` | 初始化云同步（创建私有 Gist） |
+| `bond sync --id <ID>` | 用 Gist ID 拉取（新设备） |
+| `bond sync --force` | 强制推送（跳过保护） |
+| `bond sync --git <URL>` | 用 git 仓库同步 |
 
-### 管理
+### 高级
 
 | 命令 | 说明 |
 |------|------|
-| `bond doctor` | 健康检查（8 项诊断） |
-| `bond profile list` | 列出所有 profile |
-| `bond profile create <name> [--clone from]` | 创建新 profile |
-| `bond profile use <name>` | 切换 profile |
-| `bond profile delete <name>` | 删除 profile |
-| `bond profile migrate` | 从旧版迁移到 profile 布局 |
+| `bond apply` | 手动应用 bond（session 开始时自动触发） |
+| `bond profile list\|use\|create\|delete` | 管理多 profile |
 
 ## 进化机制
 
