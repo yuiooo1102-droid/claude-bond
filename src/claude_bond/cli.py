@@ -17,6 +17,7 @@ def main(
     check: bool = typer.Option(False, "--check", help="Run health checks"),
     diff: bool = typer.Option(False, "--diff", help="Show changes since last apply"),
     tacit: bool = typer.Option(False, "--tacit", help="Show tacit mode patterns"),
+    cloud: bool = typer.Option(False, "--cloud", help="Show cloud sync info"),
 ) -> None:
     """Package your relationship with Claude."""
     if ctx.invoked_subcommand is not None:
@@ -35,6 +36,9 @@ def main(
     elif tacit:
         from claude_bond.commands.tacit_cmd import run_tacit_status
         run_tacit_status(bond_dir=bond_dir)
+    elif cloud:
+        from claude_bond.commands.cloud_cmd import run_cloud_status
+        run_cloud_status(bond_dir=bond_dir)
     else:
         from claude_bond.commands.status_cmd import run_status
         run_status(bond_dir=bond_dir)
