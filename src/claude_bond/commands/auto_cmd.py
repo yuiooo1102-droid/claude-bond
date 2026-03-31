@@ -42,5 +42,8 @@ def _auto_merge_pending(bond_dir: Path) -> None:
     if all_items:
         merge_items(all_items, bond_dir)
         console.print(f"[bold green]Auto-merged {len(all_items)} high-confidence changes.[/bold green]")
+
+        from claude_bond.cloud.auto_push import auto_push_if_configured
+        auto_push_if_configured(bond_dir)
     else:
         console.print("[dim]No high-confidence changes to merge.[/dim]")

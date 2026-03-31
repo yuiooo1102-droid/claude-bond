@@ -127,6 +127,9 @@ def _edit_dimension(dim_name: str, bond_dir: Path) -> None:
     save_dimension(updated_dim, bond_dir)
     console.print(f"[bold green]Saved {dim_name} ({len(items)} items).[/bold green]")
 
+    from claude_bond.cloud.auto_push import auto_push_if_configured
+    auto_push_if_configured(bond_dir)
+
 
 def _parse_items(content: str) -> list[str]:
     items: list[str] = []

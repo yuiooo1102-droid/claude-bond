@@ -101,3 +101,6 @@ def run_init(
 
     console.print(f"\n[bold green]Bond initialized at {bond_dir}[/bold green]")
     console.print("Run [bold]bond apply[/bold] to apply it to this machine.")
+
+    from claude_bond.cloud.auto_push import auto_push_if_configured
+    auto_push_if_configured(bond_dir)

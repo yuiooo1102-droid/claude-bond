@@ -43,5 +43,8 @@ def run_review(bond_dir: Path = BOND_DIR) -> None:
     if accepted:
         merge_items(accepted, bond_dir)
         console.print(f"\n[bold green]Merged {len(accepted)} changes into bond.[/bold green]")
+
+        from claude_bond.cloud.auto_push import auto_push_if_configured
+        auto_push_if_configured(bond_dir)
     else:
         console.print("\n[dim]No changes accepted.[/dim]")
